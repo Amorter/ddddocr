@@ -1,6 +1,6 @@
 /// 初始化内容识别。
 pub fn ddddocr_classification() -> anyhow::Result<Ddddocr<'static>> {
-    Ddddocr::new(
+    Ddddocr::new_without_sha256(
         include_bytes!("../model/common.onnx"),
         serde_json::from_str(include_str!("../model/common.json")).unwrap(),
     )
@@ -17,7 +17,7 @@ pub fn ddddocr_classification_old() -> anyhow::Result<Ddddocr<'static>> {
 
 /// 初始化目标检测。
 pub fn ddddocr_detection() -> anyhow::Result<Ddddocr<'static>> {
-    Ddddocr::new_model(include_bytes!("../model/common_det.onnx"))
+    Ddddocr::new_model_without_sha256(include_bytes!("../model/common_det.onnx"))
 }
 
 /// 滑块匹配。
@@ -518,6 +518,19 @@ unsafe impl<'a> Sync for Ddddocr<'a> {}
 
 /// 因为自带模型和自定义模型的参数不同，所以在创建模型的时候会自动判断是否为自定义模型。
 impl<'a> Ddddocr<'a> {
+    /// 从内存加载模型和字符集且不进行diy检测，只能使用内容识别，使用目标检测会恐慌。
+    pub fn new_without_sha256<MODEL>(model: MODEL, charset: Charset) -> anyhow::Result<Self>
+        where
+            MODEL: AsRef<[u8]>,
+    {
+        Ok(Self {
+            diy: false,
+            session: ort::Session::builder()?.commit_from_memory(model.as_ref())?,
+            charset: Some(std::borrow::Cow::Owned(charset)),
+            charset_range: Vec::new(),
+        })
+    }
+
     /// 从内存加载模型和字符集，只能使用内容识别，使用目标检测会恐慌。
     pub fn new<MODEL>(model: MODEL, charset: Charset) -> anyhow::Result<Self>
     where
@@ -583,6 +596,19 @@ impl<'a> Ddddocr<'a> {
     {
         Ok(Self {
             diy: is_diy(model.as_ref()),
+            session: ort::Session::builder()?.commit_from_memory(model.as_ref())?,
+            charset: None,
+            charset_range: Vec::new(),
+        })
+    }
+
+    /// 从内存加载模型且不进行diy检测，只能使用目标检测，使用内容识别会恐慌。
+    pub fn new_model_without_sha256<MODEL>(model: MODEL) -> anyhow::Result<Self>
+        where
+            MODEL: AsRef<[u8]>,
+    {
+        Ok(Self {
+            diy: false,
             session: ort::Session::builder()?.commit_from_memory(model.as_ref())?,
             charset: None,
             charset_range: Vec::new(),
