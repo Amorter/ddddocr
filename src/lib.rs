@@ -7,6 +7,7 @@ pub fn ddddocr_classification() -> anyhow::Result<Ddddocr<'static>> {
 }
 
 /// 使用旧模型初始化内容识别。
+#[cfg(feature = "old")]
 pub fn ddddocr_classification_old() -> anyhow::Result<Ddddocr<'static>> {
     Ddddocr::new(
         include_bytes!("../model/common_old.onnx"),
