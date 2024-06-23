@@ -13,7 +13,7 @@ default = []
 
 [dependencies]
 # 我把 ureq 改成了 reqwest，因为他不支持代理，导致下载经常失败
-ort = { version = "2.0.0-rc.2" }
+ort = { version = "2.0.0-rc.2", features = ["download-binaries"] }
 ndarray = "0.15"
 
 lazy_static = "1.4.0"
